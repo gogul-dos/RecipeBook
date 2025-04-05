@@ -1,22 +1,15 @@
 document.addEventListener("DOMContentLoaded", fetchTheDetails);
-let fetchedResults = null;
+let fetchedResultsFull = null;
 
 function capitalizeWords(str) {
     return str ? str.split(' ').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ') : "";
 }
-
-function resultsReady() {
-    if (!fetchedResults) {
-        document.getElementById("content-container").innerHTML = "<p>No data available.</p>";
-        return;
-    }
-    
+function renderItems(fetchedResults){
     const { strMeal, strMealThumb, strArea, strCategory, strTags, strYoutube, strInstructions } = fetchedResults;
 
     const contentContainer = document.getElementById("content-container");
-    contentContainer.innerHTML = "";
 
     let ingredientsHTML = "";
     for (let i = 1; i <= 20; i++) {
@@ -26,7 +19,7 @@ function resultsReady() {
         if (ingredient && ingredient.trim()) {
             ingredientsHTML += `
                 <li class="list-item-ingredients">
-                    <p>${capitalizeWords(ingredient)}:</p> <p>${measure || "To taste"}</p>
+                    <p>${capitalizeWords(ingredient)}:</p> <p style="color:black;">${measure || "To taste"}</p>
                 </li>`;
         }
     }
@@ -38,6 +31,9 @@ function resultsReady() {
     <div>
         <div class="foodMainContainer"> 
             <div class="food-left-container">
+                <div class ="go-back-button-container">
+                    <button type="button" class="go-back-button" onClick="displayImages()">Go Back </button>
+                </div>
                 <h2>${strMeal}</h2>
                 <img class="food-image" src="${strMealThumb}" alt="${strMeal}" />
                 <div>
@@ -62,6 +58,46 @@ function resultsReady() {
     </div>
     `;
 }
+function resultsReady() {
+    if (!fetchedResultsFull) {
+        document.getElementById("content-container").innerHTML = "<p>No data available.</p>";
+        return;
+    }
+
+    fetchedResultsFull.forEach(food => {
+        renderItems(food);
+    });
+
+    
+    
+}
+
+function foodIconClicked(strId){
+    let  fetchedResults = fetchedResultsFull.filter(each => each.idMeal == strId);
+    renderItems(fetchedResults[0]);
+}
+
+
+function displayImages() {
+    const contentContainer = document.getElementById("content-container");
+    const unOrderedList = document.createElement("ul");
+    contentContainer.innerHTML = "";
+    contentContainer.appendChild(unOrderedList);
+    unOrderedList.classList.add("food-icons-unordered");
+    
+    let itemsHTML = "";
+    fetchedResultsFull.forEach(food => {
+        itemsHTML += `
+        <li class="food-icon-list-item">
+            <button type="Button" id="${food.idMeal}" onClick="foodIconClicked('${food.idMeal}')" class="food-icon-button"> 
+                <img src="${food.strMealThumb}" alt="${food.strMeal}" class="food-icon"/>
+                <p class="food-icon-name">${food.strMeal}</p>
+            </button>
+        </li>`;
+    });
+
+    unOrderedList.innerHTML = itemsHTML;
+}
 
 
 async function fetchTheDetails() {
@@ -69,18 +105,20 @@ async function fetchTheDetails() {
     const contentContainer = document.getElementById("content-container");
 
     loadingScreen.style.display = "block";
+    let api = "https://www.themealdb.com/api/json/v1/1/search.php?s="
 
     try {
-        const response = await fetch("https://www.themealdb.com/api/json/v1/1/search.php?s=Arrabiata");
+        const response = await fetch(api+"");
         const data = await response.json();
 
         loadingScreen.style.display = "none";
         contentContainer.style.display = "block";
 
         if (data.meals) {
-            fetchedResults = data.meals[0];
-            console.log(fetchedResults);
-            resultsReady();
+            fetchedResultsFull = data.meals;
+            console.log(fetchedResultsFull);
+            // resultsReady();
+            displayImages();
         } else {
             contentContainer.innerHTML = "<p>No recipes found.</p>";
         }
